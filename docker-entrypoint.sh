@@ -1,5 +1,7 @@
-#!/usr/bin/env bash
-set -Eeo pipefail
+#!/usr/bin/env sh
+# set -Eeo pipefail
+
+export PATH=$PATH:/sbin
 # TODO swap to -Eeuo pipefail above (after handling all potentially-unset variables)
 
 # usage: file_env VAR [DEFAULT]
