@@ -19,12 +19,10 @@ RUN mkdir /docker-entrypoint-initdb.d
 
 RUN set -ex; \
     test $PG_VERSION = notset && export PG_VERSION=`wget -O - https://www.postgresql.org/ftp/source/ 2>/dev/null|fgrep  'img src="/media/img/ftp/folder.png" alt="v'|head -1|sed 's/^.*a href="v\([^"]\+\).*/\1/'|sed 's/\/$//'` ; \
-    echo "PG_VERSION => $PG_VERSION" \
-    set -ex \
+    echo "PG_VERSION: $PG_VERSION" \
 	\
 	&& apk add --no-cache --virtual .fetch-deps \
 		ca-certificates \
-                curl \
 		openssl \
 		tar \
 	\
