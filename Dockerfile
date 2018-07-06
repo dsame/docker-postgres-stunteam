@@ -1,6 +1,7 @@
 FROM stunteam/alpine:role
 
 ARG PG_VERSION=notset
+ARG CONFIGURE_OPTS
 
 # alpine includes "postgres" user/group in base install
 #   /etc/passwd:22:postgres:x:70:70::/var/lib/postgresql:/bin/sh
@@ -102,6 +103,7 @@ RUN set -ex; \
 		--with-openssl \
 		--with-libxml \
 		--with-libxslt \
+    $CONFIGURE_OPTS \
 	&& make -j "$(nproc)" world \
 	&& make install-world \
 	&& make -C contrib install \
