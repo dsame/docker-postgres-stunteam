@@ -1,29 +1,35 @@
 #!/usr/bin/env sh
-# set -Eeo pipefail
-
-export PATH=$PATH:/sbin
-# TODO swap to -Eeuo pipefail above (after handling all potentially-unset variables)
 
 # usage: file_env VAR [DEFAULT]
 #    ie: file_env 'XYZ_DB_PASSWORD' 'example'
 # (will allow for "$XYZ_DB_PASSWORD_FILE" to fill in the value of
 #  "$XYZ_DB_PASSWORD" from a file, especially for Docker's secrets feature)
+
+# concrete applications
+#		file_env 'POSTGRES_INITDB_ARGS' 
+#
 file_env() {
 	local var="$1"
+	local evar=`eval echo \\$$var`
 	local fileVar="${var}_FILE"
+	local efileVar=`eval echo \\$$fileVar`
 	local def="${2:-}"
-	if [ "${!var:-}" ] && [ "${!fileVar:-}" ]; then
+	echo "var=$var evar=$evar def=$def"
+	if [ "${evar:-}" ] && [ "${efileVar:-}" ]; then
 		echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
-		exit 1
+	  exit 1
 	fi
 	local val="$def"
-	if [ "${!var:-}" ]; then
-		val="${!var}"
-	elif [ "${!fileVar:-}" ]; then
-		val="$(< "${!fileVar}")"
+	if [ "${evar:-}" ]; then
+		val="${evar}"
+	elif [ "${efileVar:-}" ]; then
+		val=`cat "${efileVar}"`
 	fi
+	echo "export \"$var\"=\"$val\""
 	export "$var"="$val"
-	unset "$fileVar"
+	if [ foo$efileVar != foo ];then
+	  unset "$efileVar"
+	fi
 }
 
 if [ "${1:0:1}" = '-' ]; then
@@ -47,7 +53,7 @@ if [ "$1" = 'postgres' ] && [ "$(id -u)" = '0' ]; then
 		chmod 700 "$POSTGRES_INITDB_WALDIR"
 	fi
 
-	exec su-exec postgres "$BASH_SOURCE" "$@"
+	exec /sbin/su-exec postgres /usr/local/bin/docker-entrypoint.sh "$@"
 fi
 
 if [ "$1" = 'postgres' ]; then
@@ -66,6 +72,7 @@ if [ "$1" = 'postgres' ]; then
 			echo "postgres:x:$(id -u):$(id -g):PostgreSQL:$PGDATA:/bin/false" > "$NSS_WRAPPER_PASSWD"
 			echo "postgres:x:$(id -g):" > "$NSS_WRAPPER_GROUP"
 		fi
+		
 
 		file_env 'POSTGRES_INITDB_ARGS'
 		if [ "$POSTGRES_INITDB_WALDIR" ]; then
@@ -120,10 +127,11 @@ if [ "$1" = 'postgres' ]; then
 		file_env 'POSTGRES_USER' 'postgres'
 		file_env 'POSTGRES_DB' "$POSTGRES_USER"
 
-		psql=( psql -v ON_ERROR_STOP=1 )
+		psql=psql
+		#psql=( psql -v ON_ERROR_STOP=1 )
 
 		if [ "$POSTGRES_DB" != 'postgres' ]; then
-			"${psql[@]}" --username postgres <<-EOSQL
+			${psql} --username postgres <<-EOSQL
 				CREATE DATABASE "$POSTGRES_DB" ;
 			EOSQL
 			echo
@@ -134,12 +142,13 @@ if [ "$1" = 'postgres' ]; then
 		else
 			op='CREATE'
 		fi
-		"${psql[@]}" --username postgres <<-EOSQL
+		${psql} --username postgres <<-EOSQL
 			$op USER "$POSTGRES_USER" WITH SUPERUSER $pass ;
 		EOSQL
 		echo
 
-		psql+=( --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" )
+		# psql+=( --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" )
+		psql="$psql --username $POSTGRES_USER --dbname $POSTGRES_DB"
 
 		echo
 		for f in /docker-entrypoint-initdb.d/*; do
@@ -155,8 +164,8 @@ if [ "$1" = 'postgres' ]; then
 						. "$f"
 					fi
 					;;
-				*.sql)    echo "$0: running $f"; "${psql[@]}" -f "$f"; echo ;;
-				*.sql.gz) echo "$0: running $f"; gunzip -c "$f" | "${psql[@]}"; echo ;;
+				*.sql)    echo "$0: running $f"; ${psql} -f "$f"; echo ;;
+				*.sql.gz) echo "$0: running $f"; gunzip -c "$f" | ${psql}; echo ;;
 				*)        echo "$0: ignoring $f" ;;
 			esac
 			echo
