@@ -1,7 +1,7 @@
-#Notes about docker
+# Notes about docker
 There's no `curl` installed because alpine base image contains `wget` by default
 
-#Configuration options:
+# Configuration options:
 
 There are 3 phases to be configured: 1. building the docker, 2. running the postgres for 
 the very first time and init db, 3. up the postgres daemon.
