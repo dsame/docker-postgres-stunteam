@@ -60,5 +60,7 @@ docker run -e POSTGRES_PASSWORD=secret -v/docker_entry_point_on_host:/docker-ent
 ```
 
 
-## Running the docker container
-
+## Full life cycle sample command:
+```
+m -rf /tmp/pgtest;docker build --build-arg PGDATA='/test' -t t . && docker stop pg;docker rm pg;docker run --name pg -e POSTGRES_PASSWORD=secret -ePGDATA='/test' -ePOSTGRES_USER=tuser -ePOSTGRES_DB=tdb -v/tmp/pgtest:/test  t
+```
