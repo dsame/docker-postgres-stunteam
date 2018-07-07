@@ -14,7 +14,6 @@ file_env() {
 	local fileVar="${var}_FILE"
 	local efileVar=`eval echo \\$$fileVar`
 	local def="${2:-}"
-	echo "var=$var evar=$evar def=$def"
 	if [ "${evar:-}" ] && [ "${efileVar:-}" ]; then
 		echo >&2 "error: both $var and $fileVar are set (but are exclusive)"
 	  exit 1
@@ -25,7 +24,6 @@ file_env() {
 	elif [ "${efileVar:-}" ]; then
 		val=`cat "${efileVar}"`
 	fi
-	echo "export \"$var\"=\"$val\""
 	export "$var"="$val"
 	if [ foo$efileVar != foo ];then
 	  unset "$efileVar"
